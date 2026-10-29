@@ -1,0 +1,29 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PlacidWay Assistant</title><style>
+body{font-family:system-ui,sans-serif;margin:0;background:#f4f6f8;display:flex;justify-content:center}
+#app{width:100%;max-width:720px;height:100vh;display:flex;flex-direction:column}
+h1{font-size:18px;margin:0;padding:14px 16px;background:#0b6e6e;color:#fff}
+#log{flex:1;overflow:auto;padding:16px}
+.m{max-width:85%;padding:10px 12px;border-radius:12px;margin:8px 0;white-space:pre-wrap;line-height:1.4}
+.u{background:#0b6e6e;color:#fff;margin-left:auto}.b{background:#fff;border:1px solid #dde}
+.src{font-size:12px;margin-top:6px;word-break:break-all}.src a{color:#0b6e6e}
+form{display:flex;gap:8px;padding:12px;background:#fff;border-top:1px solid #dde}
+input{flex:1;padding:10px;border:1px solid #bbc;border-radius:8px;font-size:15px}
+button{padding:10px 16px;border:0;border-radius:8px;background:#0b6e6e;color:#fff;cursor:pointer}
+.lead{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.lead input{flex:1;min-width:120px;padding:6px}
+</style></head><body><div id="app"><h1>PlacidWay Assistant</h1><div id="log"></div>
+<form id="f"><input id="q" placeholder="Ask about treatments, prices, clinics…" autocomplete="off"><button>Send</button></form></div>
+<script>
+const log=document.getElementById('log'),q=document.getElementById('q');let hist=[];
+function add(t,c){const d=document.createElement('div');d.className='m '+c;d.textContent=t;log.appendChild(d);log.scrollTop=1e9;return d}
+add("Hi! Ask me about ITC Immunity Therapy Center treatments and prices. I only answer from PlacidWay pages.","b");
+document.getElementById('f').onsubmit=async e=>{e.preventDefault();const m=q.value.trim();if(!m)return;q.value='';add(m,'u');
+const w=add('…','b');
+try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:m,history:hist})});
+if(!r.ok)throw new Error((await r.json()).detail||r.status);const d=await r.json();w.textContent=d.answer;
+if(d.sources.length){const s=document.createElement('div');s.className='src';s.append('Sources: ');d.sources.forEach(u=>{const a=document.createElement('a');a.href=u;a.target='_blank';a.textContent=u+' ';s.append(a,document.createElement('br'))});w.append(s)}
+if(d.wants_quote){const l=document.createElement('div');l.className='lead';l.innerHTML='<input placeholder="Name"><input placeholder="Email"><button type="button">Request quote</button>';
+l.lastChild.onclick=async()=>{const[n,em]=l.querySelectorAll('input');const x=await fetch('/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n.value,email:em.value,note:m})});l.textContent=x.ok?'Thanks! PlacidWay will contact you.':'Please enter a valid email.'};w.append(l)}
+hist.push({role:'user',content:m},{role:'assistant',content:d.answer});hist=hist.slice(-8)}
+catch(err){w.textContent='Sorry, something went wrong: '+err.message}};
+</script></body></html>
